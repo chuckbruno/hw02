@@ -1,33 +1,42 @@
 /* 基于智能指针实现双向链表 */
 #include <cstdio>
 #include <memory>
+#include <iostream>
 
 struct Node {
     // 这两个指针会造成什么问题？请修复
-    std::shared_ptr<Node> next;
-    std::shared_ptr<Node> prev;
+    std::shared_ptr<Node> next = nullptr;
+	std::weak_ptr<Node> prev;
     // 如果能改成 unique_ptr 就更好了!
 
     int value;
 
     // 这个构造函数有什么可以改进的？
-    Node(int val) {
-        value = val;
+    Node(int val) :value(val){
     }
 
     void insert(int val) {
         auto node = std::make_shared<Node>(val);
+		/*      node->prev = prev;
+			  node->next = next;
+			  if (!prev.expired())
+				  prev.lock()->next = node;
+			  if (next)
+				  next->prev = node;*/
+
         node->next = next;
-        node->prev = prev;
-        if (prev)
-            prev->next = node;
         if (next)
             next->prev = node;
+
+		if (!prev.expired())
+			prev.lock()->next->next = node;
+
+        node->prev = prev.lock()->next;
     }
 
     void erase() {
-        if (prev)
-            prev->next = next;
+        if (!prev.expired())
+            prev.lock()->next = next;
         if (next)
             next->prev = prev;
     }
@@ -38,14 +47,50 @@ struct Node {
 };
 
 struct List {
-    std::shared_ptr<Node> head;
+    std::shared_ptr<Node> head = nullptr;
 
     List() = default;
 
     List(List const &other) {
-        printf("List 被拷贝！\n");
-        head = other.head;  // 这是浅拷贝！
+        printf("List copied\n");
+        // head = other.head;  // 这是浅拷贝！
         // 请实现拷贝构造函数为 **深拷贝**
+        //auto tempPtr = other.head.get();
+        auto tempPtr = other.head;
+        if (tempPtr)
+        {
+			while (tempPtr->next)
+			{
+				tempPtr = tempPtr->next;
+
+			}
+
+            std::cout << tempPtr->value << std::endl;
+
+            for (auto curr = tempPtr; curr != other.head; curr = curr->prev.lock())
+            {
+                std::cout << curr->value << std::endl;
+                push_front(curr->value);
+            }
+
+            push_front(other.head->value);
+			//for (auto curr = tempPtr; curr != other.head.get(); curr = curr->prev.lock().get())
+			//{
+			//	std::cout << curr->value << std::endl;
+			//	push_front(curr->value);
+			//}
+            
+	 /*       auto tempPtr = std::make_shared<Node>(other.head->value);
+			for (auto curr = other.front()->next; curr; curr = curr->next) {
+				tempPtr->insert(curr->value);
+			}*/
+        }
+        else
+        {
+            head = nullptr;
+        }
+
+        
     }
 
     List &operator=(List const &) = delete;  // 为什么删除拷贝赋值函数也不出错？
@@ -80,7 +125,7 @@ struct List {
     }
 };
 
-void print(List lst) {  // 有什么值得改进的？
+void print(const List& lst) {  // 有什么值得改进的？
     printf("[");
     for (auto curr = lst.front(); curr; curr = curr->next.get()) {
         printf(" %d", curr->value);
@@ -109,9 +154,15 @@ int main() {
 
     a.at(3)->erase();
 
+    std::cout << "-----a-----" << std::endl;
     print(a);   // [ 1 4 2 5 7 ]
+    std::cout << "-----b-----" << std::endl;
     print(b);   // [ 1 4 2 8 5 7 ]
-
+    std::cout << "-----a-----" << std::endl;
+    print(a);
+    std::cout << "-----insert-----" << std::endl;
+    b.at(2)->insert(90);
+    print(b);
     b = {};
     a = {};
 
