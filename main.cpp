@@ -6,7 +6,7 @@
 struct Node {
     // 这两个指针会造成什么问题？请修复
     std::shared_ptr<Node> next = nullptr;
-	std::weak_ptr<Node> prev;
+    std::weak_ptr<Node> prev;
     // 如果能改成 unique_ptr 就更好了!
 
     int value;
@@ -17,19 +17,19 @@ struct Node {
 
     void insert(int val) {
         auto node = std::make_shared<Node>(val);
-		/*      node->prev = prev;
-			  node->next = next;
-			  if (!prev.expired())
-				  prev.lock()->next = node;
-			  if (next)
-				  next->prev = node;*/
+        /*      node->prev = prev;
+              node->next = next;
+              if (!prev.expired())
+                  prev.lock()->next = node;
+              if (next)
+                  next->prev = node;*/
 
         node->next = next;
         if (next)
             next->prev = node;
 
-		if (!prev.expired())
-			prev.lock()->next->next = node;
+        if (!prev.expired())
+            prev.lock()->next->next = node;
 
         node->prev = prev.lock()->next;
     }
@@ -59,11 +59,11 @@ struct List {
         auto tempPtr = other.head;
         if (tempPtr)
         {
-			while (tempPtr->next)
-			{
-				tempPtr = tempPtr->next;
+            while (tempPtr->next)
+            {
+                tempPtr = tempPtr->next;
 
-			}
+            }
 
             std::cout << tempPtr->value << std::endl;
 
@@ -74,16 +74,16 @@ struct List {
             }
 
             push_front(other.head->value);
-			//for (auto curr = tempPtr; curr != other.head.get(); curr = curr->prev.lock().get())
-			//{
-			//	std::cout << curr->value << std::endl;
-			//	push_front(curr->value);
-			//}
+            //for (auto curr = tempPtr; curr != other.head.get(); curr = curr->prev.lock().get())
+            //{
+            //  std::cout << curr->value << std::endl;
+            //  push_front(curr->value);
+            //}
             
-	 /*       auto tempPtr = std::make_shared<Node>(other.head->value);
-			for (auto curr = other.front()->next; curr; curr = curr->next) {
-				tempPtr->insert(curr->value);
-			}*/
+     /*       auto tempPtr = std::make_shared<Node>(other.head->value);
+            for (auto curr = other.front()->next; curr; curr = curr->next) {
+                tempPtr->insert(curr->value);
+            }*/
         }
         else
         {
